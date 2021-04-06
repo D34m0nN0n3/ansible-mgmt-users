@@ -1,0 +1,62 @@
+---
+- hosts: all
+  gather_facts: false
+  vars:
+    change_force_password: true
+    cleanup_force_homedir: true
+    bash_profile_files:
+      - bash_profile
+      - bash_logout
+
+  tasks:
+    - name: Read users from CSV file
+      read_csv:
+        path: "{{ users_file | default('users_list.csv') }}"
+        delimiter: ';'
+      register: users
+      delegate_to: localhost
+
+    - name: Create group for developers accounts
+      group:
+        name: developers
+        state: present
+
+    - name: Add, modify, delete user accounts
+      user:
+        name: "{{ item.user }}"
+        group: developers
+        password: "{% if item.password != '!' %}{{ item.password | password_hash('sha512') }}{% else %}{{ item.password }}{% endif %}"
+        update_password: always
+        createhome: "{{ user_home_create | default('yes') }}"
+        generate_ssh_key: "{{ user_ssh_key_gen | default('no') }}"
+        shell: /bin/bash
+        comment: "{{ item.comment }}"
+        expires: "{{ user_expires_date | default('-1') }}"
+        state: "{{ item.state | default(omit) }}"
+      loop: "{{ users.list }}"
+
+    - name: change password
+      shell: chage -d 0 {% if item.password != '!' %}{{ item.user }}{% endif %}
+      loop: "{{ users.list }}"
+      ignore_errors: yes
+      when: change_force_password | bool == true
+
+    - name: Setup cleanup users home dir
+      blockinfile:
+        path: "/home/{{ item.0.user }}/.{{ item.1 }}"
+        block: 'rm -rf ~/*'
+      register: result
+      with_nested:
+        - "{{ users.list }}"
+        - "{{ bash_profile_files }}"
+      ignore_errors: yes
+      when: cleanup_force_homedir | bool == true
+
+    - name: Create sudoers rule for developers group
+      lineinfile:
+        path: /etc/sudoers.d/developers
+        create: yes
+        state: present
+        line: '%developers   ALL=(ALL)  ALL'
+        validate: /usr/sbin/visudo -cf %s
+...
