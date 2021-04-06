@@ -74,3 +74,6 @@ generate_ssh_key        |Нужна ли генерация SSH ключей    
 
 ## Дополнительные материалы
 
+- [Ansible User Module](https://docs.ansible.com/ansible/2.5/modules/user_module.html)
+- [Defining variables at runtime](https://docs.ansible.com/ansible/latest/user_guide/playbooks_variables.html#defining-variables-at-runtime)
+- [GECOS](https://ru.wikipedia.org/wiki//etc/passwd#GECOS)
