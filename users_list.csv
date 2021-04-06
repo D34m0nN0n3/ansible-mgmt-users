@@ -1,0 +1,4 @@
+user;password;comment;state
+user1;P@ssw0rd;user1@example.com,+7(999)123-45-67;present
+user2;!;comment;present
+user3;P@ssw0rd;comment;absent
